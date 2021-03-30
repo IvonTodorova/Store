@@ -13,16 +13,19 @@ public class Main {
         initialDelivery();
         billa.start();
 
+
     }
 
     private static void addCashiers() {
-        CashRegister cashRegister1 = new CashRegister(1);
+        CashRegister cashRegister1 = new CashRegister(1,billa);
         Cashier cashier1= new Cashier(cashRegister1,"Ivon",1000,1);
         billa.addCashier(cashier1);
 
-        CashRegister cashRegister2 = new CashRegister(2);
+        CashRegister cashRegister2 = new CashRegister(2,billa);
         Cashier cashier2= new Cashier(cashRegister2,"Pavlin",1000,2);
         billa.addCashier(cashier2);
+
+
     }
 
     private static void initialDelivery() {
@@ -38,4 +41,5 @@ public class Main {
         billa.deliverItem(bread);
         billa.printInventory();
     }
+
 }

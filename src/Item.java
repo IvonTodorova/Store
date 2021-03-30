@@ -23,23 +23,27 @@ public class Item implements Comparable<Item> {
         this.inventoryNum = inventoryNum;
     }
 
-    public double  calculatePrice(Store store) throws ExpiredItemException {
-        double price = getDeliveryPrice();
-        if (isFood)
-        {
-            price += price * (store.getOverchargeFood()) / 100.0;
-        }
-        else
-        {
-            price+=price*(store.getOverchargeNonFood()) / 100.0;
-        }
+    public boolean isExpired() {
         LocalDate currentDate = LocalDate.now();
         if (currentDate.isAfter(expireDate)) {
+            return true;
+        } else
+            return false;
+    }
+
+    public double calculatePrice(Store store) throws ExpiredItemException {
+        double price = getDeliveryPrice();
+        if (isFood) {
+            price += price * (store.getOverchargeFood()) / 100.0;
+        } else {
+            price += price * (store.getOverchargeNonFood()) / 100.0;
+        }
+        if (isExpired()) {
             throw new ExpiredItemException(this);
         }
-        if (currentDate.until(expireDate).getDays() <=store.getExpireDiscountPeriod())
-        {
-            price-=price *(store.getPercentDiscount()) /100.0;
+        LocalDate currentDate = LocalDate.now();
+        if (currentDate.until(expireDate).getDays() <= store.getExpireDiscountPeriod()) {
+            price -= price * (store.getPercentDiscount()) / 100.0;
         }
 
 
@@ -114,4 +118,5 @@ public class Item implements Comparable<Item> {
                 ", expireDate=" + expireDate +
                 '}';
     }
+
 }

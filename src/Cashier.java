@@ -1,4 +1,8 @@
-import java.util.Scanner;
+import com.sun.jdi.IntegerValue;
+
+import java.lang.invoke.VarHandle;
+import java.sql.Array;
+import java.util.*;
 
 public class Cashier implements Runnable {
 
@@ -8,11 +12,13 @@ public class Cashier implements Runnable {
     private int id;
     private boolean isInTransaction;
 
+
     public Cashier(CashRegister cashRegister, String name, double salary, int id) {
         this.cashRegister = cashRegister;
         this.name = name;
         this.salary = salary;
         this.id = id;
+
     }
 
     @Override
@@ -22,19 +28,29 @@ public class Cashier implements Runnable {
                 //zapochva nov transaction
                 if (!isInTransaction) {
                     printMessage("Welcome");
+                    cashRegister.beginReceipt(getName());
                 }
+
                 PurchaseItem pi = getCustomerInput();
                 //svyrshva stransactiona
                 if (pi==null)
                 {
                     isInTransaction=false;
-                    printMessage("Bye Bye");
+                    String receipt= cashRegister.endReceipt();
+                    printMessage(receipt);
                 }
                 //dobavqme purchase kym pokupkata
                 else
                 {
                     isInTransaction = true;
-                    printMessage("Purchase"+ pi.getId()+" and "+ pi.getQuantity());
+                    try {
+//                        cashRegister.getStore().Purchase(pi.getId(),pi.getQuantity());
+                        double price = cashRegister.addPurchase(pi.getId(), pi.getQuantity());
+                        printMessage("Purchased " +pi.getQuantity() + " "
+                                + cashRegister.getStore().getNameForId(pi.getId()));
+                    } catch (Exception e) {
+                        printMessage(e.getMessage());
+                    }
 
                 }
             }
@@ -44,8 +60,6 @@ public class Cashier implements Runnable {
                 e.printStackTrace();
             }
         }
-
-
     }
 
     public PurchaseItem getCustomerInput() {
@@ -56,15 +70,28 @@ public class Cashier implements Runnable {
         if( line == null || line.isBlank()) {
             return null;
         }
-        else{
+        else {
             Scanner strSc = new Scanner(line);
             return new PurchaseItem(strSc.nextInt(), strSc.nextInt());
         }
+
+
     }
 
-    public void printInventory(){
-        System.out.println("This is the inventory");
+    public void printInventory()
+    {
+        HashMap<Integer, TreeSet<Item>> inventoryBuf = cashRegister.getStore().getInventory();
+
+        for (Map.Entry<Integer,TreeSet<Item>>item :inventoryBuf.entrySet())
+        {
+            int key = item.getKey();
+            TreeSet<Item> values = item.getValue();
+
+            System.out.println( key+" "+values.first().getName());
+
+        }
     }
+
 
     public void printMessage(String msg) {
         System.out.println("CR " + cashRegister.getId() + "/ " + name + ": " + msg);
@@ -77,7 +104,6 @@ public class Cashier implements Runnable {
     public void setCashRegister(CashRegister cashRegister) {
         this.cashRegister = cashRegister;
     }
-
     public String getName() {
         return name;
     }
