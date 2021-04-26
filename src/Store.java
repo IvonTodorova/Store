@@ -1,4 +1,11 @@
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.TreeSet;
 
@@ -13,6 +20,33 @@ public class Store {
     private int expireDiscountPeriod;
     private int overchargeFood;
     private int overchargeNonFood;
+    private String cashReceiptFolder;
+    private double expenses;
+    private double revenue;
+
+
+    public double getExpenses() {
+        return expenses;
+    }
+
+    public void close() {
+
+        System.out.println("Closing store  " + nameStore);
+        System.out.println("Number of receipts: " + CashRegister.getNumReceiptsIssued());
+        System.out.println("Revenue: " + getRevenue());
+        System.out.println("Expenses: " + getExpenses());
+        System.out.println("Profit: " + profit());
+        System.exit(0);
+
+    }
+
+    public double getRevenue() {
+        return revenue;
+    }
+
+    public String getCashReceiptFolder() {
+        return cashReceiptFolder;
+    }
 
     public String getNameStore() {
         return nameStore;
@@ -22,14 +56,25 @@ public class Store {
         this.nameStore = nameStore;
     }
 
-    public Store(int percentDiscount, int expireDiscountPeriod, int overchargeFood, int overchargeNonFood) {
+    public Store(int percentDiscount, int expireDiscountPeriod, int overchargeFood, int overchargeNonFood, String name) {
         this.cashiers = new ArrayList<Cashier>();
         this.inventory = new HashMap<>();
         this.overchargeNonFood = overchargeNonFood;
         this.percentDiscount = percentDiscount;
         this.expireDiscountPeriod = expireDiscountPeriod;
         this.overchargeFood = overchargeFood;
-
+        this.nameStore = name;
+        this.revenue = 0;
+        this.expenses = 0;
+        SimpleDateFormat df = new SimpleDateFormat("yy-MM-dd-HH-mm-ss");
+        this.cashReceiptFolder = this.nameStore + "-" + df.format(new Date());
+        try {
+            Path p = Path.of(cashReceiptFolder);
+            Files.createDirectory(p);
+            System.out.println("Created receipt folder: " + p.toAbsolutePath());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public double Purchase(int id, int num) throws Exception {
@@ -65,6 +110,14 @@ public class Store {
         return price;
     }
 
+    public void addToExpenses(double expense) {
+        expenses += expense;
+    }
+
+    public void addToRevenue(double revenue) {
+        this.revenue += revenue;
+    }
+
     public String getNameForId(int id) {
         TreeSet<Item> items = inventory.get(id);
 
@@ -85,7 +138,11 @@ public class Store {
             if (!item.isExpired())
                 countAvailable += item.getInventoryNum();
             else {
+
                 items.remove(item);
+                if (items.isEmpty()) {
+                    inventory.remove(id);
+                }
             }
         }
         if (countAvailable >= num)
@@ -95,8 +152,13 @@ public class Store {
             return countAvailable;
     }
 
+    public double profit() {
+        return getRevenue() - getExpenses();
+    }
+
     public void addCashier(Cashier cashier) {
         cashiers.add(cashier);
+        addToExpenses(cashier.getSalary());
     }
 
     public HashMap<Integer, TreeSet<Item>> getInventory() {
@@ -129,6 +191,7 @@ public class Store {
     public void deliverItem(Item item) {
 
         TreeSet<Item> items = inventory.get(item.getItemId());
+        addToExpenses(item.getDeliveryPrice() * item.getInventoryNum());
 
         if (items == null) {
             items = new TreeSet<Item>();
